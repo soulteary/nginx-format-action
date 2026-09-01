@@ -1,21 +1,23 @@
-'use strict';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { test } from 'bun:test';
 
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { spawnSync } = require('node:child_process');
-const test = require('node:test');
-
+const require = createRequire(import.meta.url);
 const action = require('../src/main.js');
-const repositoryRoot = path.resolve(__dirname, '..');
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = path.resolve(currentDirectory, '..');
 const temporaryPrefix = 'nginx-format-action-';
 
 function makeFakeFormatter(root) {
   const fake = path.join(root, 'nginx-formatter');
   fs.writeFileSync(
     fake,
-    `#!/usr/bin/env node
+    `#!/usr/bin/env bun
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
