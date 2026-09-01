@@ -91,11 +91,13 @@ For the most reproducible supply chain, pin both this action and the formatter v
 
 ## Development
 
-Node.js 24 or newer is required. The action has no runtime npm dependencies.
+Bun 1.4 or newer is used for development, syntax checks, and tests. The action has no runtime package dependencies.
+
+GitHub currently executes JavaScript actions through the runtime declared in `action.yml`, so `runs.using: node24` remains as the GitHub-managed action host. Consumers do not need to install Node.js or Bun.
 
 ```bash
-npm run check
-npm test
+bun run check
+bun test
 ```
 
 The CI workflow also runs the action itself against formatted and unformatted fixtures.
