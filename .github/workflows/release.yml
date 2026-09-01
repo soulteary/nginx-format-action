@@ -37,14 +37,26 @@ jobs:
         with:
           bun-version: "1.4.0"
 
+      - name: Validate package version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          package_version="$(bun -e 'process.stdout.write(require("./package.json").version)')"
+          if [[ ! "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json version $package_version is not a stable semantic version" >&2
+            exit 1
+          fi
+
+          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
+
       - name: Validate release tag
         if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
 
-          package_version="$(bun -e 'process.stdout.write(require("./package.json").version)')"
-          expected_tag="v${package_version}"
+          expected_tag="v${PACKAGE_VERSION}"
 
           if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Tag $GITHUB_REF_NAME is not a stable semantic version" >&2
@@ -124,13 +136,16 @@ jobs:
               --title "Nginx Format Action $GITHUB_REF_NAME"
           fi
 
-      - name: Update major version tag
+      - name: Update major and minor version tags
         shell: bash
         run: |
           set -euo pipefail
 
           version="${GITHUB_REF_NAME#v}"
           major_tag="v${version%%.*}"
+          minor_tag="v${version%.*}"
           release_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
-          git push --force origin "$release_commit:refs/tags/$major_tag"
-          echo "Updated $major_tag to $release_commit"
+          git push --force origin \
+            "$release_commit:refs/tags/$major_tag" \
+            "$release_commit:refs/tags/$minor_tag"
+          echo "Updated $major_tag and $minor_tag to $release_commit"

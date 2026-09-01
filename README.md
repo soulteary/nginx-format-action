@@ -40,7 +40,8 @@ jobs:
 | Action reference | Behavior | Recommended use |
 | --- | --- | --- |
 | `@v1` | Moves to the latest compatible v1 release | Most workflows |
-| `@v1.0.0` | Fixed stable release | Reproducible version pinning |
+| `@v1.0` | Moves to the latest compatible v1.0 patch | Controlled patch updates |
+| `@v1.0.0` | Exact stable release tag | Exact release selection |
 | `@<commit-sha>` | Immutable source revision | Strict supply-chain pinning |
 
 ## Examples
@@ -176,7 +177,7 @@ The CI workflow also runs the action itself against formatted and unformatted fi
 
 ## Releasing
 
-Stable releases use immutable tags such as `v1.0.0` and a moving major alias such as `v1`. See [RELEASING.md](RELEASING.md) for the validated release workflow and exact publishing commands.
+Stable releases use full-version tags such as `v1.0.0` and moving compatibility aliases such as `v1` and `v1.0`. See [RELEASING.md](RELEASING.md) for the validated release workflow and exact publishing commands.
 
 ## License
 
