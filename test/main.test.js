@@ -55,7 +55,7 @@ function runAction(workspace, fakeFormatter, inputs = {}) {
     INPUT_MODE: inputs.mode || 'check',
     INPUT_INDENT: inputs.indent || '2',
     'INPUT_INDENT-CHAR': inputs.indentChar || 'space',
-    INPUT_VERSION: inputs.version || 'v2.2.0',
+    INPUT_VERSION: inputs.version || 'v2.3.0',
     INPUT_ANNOTATIONS: inputs.annotations || 'false',
   };
   const result = spawnSync(process.execPath, [path.join(repositoryRoot, 'dist/index.js')], {
@@ -71,8 +71,8 @@ function runAction(workspace, fakeFormatter, inputs = {}) {
 }
 
 test('normalizes and validates formatter versions', () => {
-  assert.equal(action.normalizeVersion('2.2.0'), 'v2.2.0');
-  assert.equal(action.normalizeVersion('v2.2.0-rc.1'), 'v2.2.0-rc.1');
+  assert.equal(action.normalizeVersion('2.3.0'), 'v2.3.0');
+  assert.equal(action.normalizeVersion('v2.3.0-rc.1'), 'v2.3.0-rc.1');
   assert.throws(() => action.normalizeVersion('latest'), /semantic release version/);
 });
 
@@ -99,7 +99,7 @@ test('finds a release checksum by exact asset name', () => {
 test('pins every default-version runner checksum', () => {
   for (const platform of ['darwin', 'linux']) {
     for (const architecture of ['amd64', 'arm64']) {
-      assert.match(action.PINNED_CHECKSUMS[`v2.2.0/${platform}-${architecture}`], /^[a-f0-9]{64}$/);
+      assert.match(action.PINNED_CHECKSUMS[`v2.3.0/${platform}-${architecture}`], /^[a-f0-9]{64}$/);
     }
   }
 });

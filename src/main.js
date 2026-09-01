@@ -7,12 +7,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const FORMATTER_REPOSITORY = 'soulteary/nginx-formatter';
-const DEFAULT_VERSION = 'v2.2.0';
+const DEFAULT_VERSION = 'v2.3.0';
 const PINNED_CHECKSUMS = Object.freeze({
-  'v2.2.0/darwin-amd64': '85192e158f08711450bb8515b95a2cfe93de774f4676f6b13b73fd76a5fd61bd',
-  'v2.2.0/darwin-arm64': 'a1b9693029659a004dd6f511ff4af7f89b87de568c708ed6c6436838f6452e54',
-  'v2.2.0/linux-amd64': '39dd3daf71a1a3ac36091f05211583c41cdb23a563915ea7e2e4188505d697a0',
-  'v2.2.0/linux-arm64': 'e154093f28eb45117e3e757f76de87a6ee0fdd5535d9ae43b8a2aab9c5bb703f',
+  'v2.3.0/darwin-amd64': 'c5e4fbedb61c36fbbb3e222afab12aac3e99b88fe146e9b1e815436519051b24',
+  'v2.3.0/darwin-arm64': '33c77b08fe22ba5efa65e7bab411f4a9f1dd4402ee07f6e68501b27a99bdf554',
+  'v2.3.0/linux-amd64': 'bb4cc47079432d4965e0b7106f6351a3a78b95122733665a66625576b216ece8',
+  'v2.3.0/linux-arm64': '73500dc998744b4198aa5a9a5213b9b1d6bee77feabde2557e9dd1f9723163c7',
 });
 
 function getInput(name, defaultValue = '') {
@@ -30,7 +30,7 @@ function parseBoolean(value, name) {
 function normalizeVersion(value) {
   const normalized = value.startsWith('v') ? value : `v${value}`;
   if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(normalized)) {
-    throw new Error('version must be a semantic release version such as v2.2.0');
+    throw new Error('version must be a semantic release version such as v2.3.0');
   }
   return normalized;
 }

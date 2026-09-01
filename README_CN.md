@@ -53,7 +53,7 @@ jobs:
 | `mode` | `check` | `check` 检测差异并让步骤失败；`write` 就地写入格式化结果。 |
 | `indent` | `2` | 缩进宽度，范围为 1～16。 |
 | `indent-char` | `space` | 可选 `space`、`tab`、`\s` 或 `\t`。 |
-| `version` | `v2.2.0` | 指定 `nginx-formatter` 的精确发布版本，保证运行结果可复现。 |
+| `version` | `v2.3.0` | 指定 `nginx-formatter` 的精确发布版本，保证运行结果可复现。 |
 | `annotations` | `true` | 为存在差异的文件生成 GitHub 工作流标注。 |
 
 ## 输出参数
@@ -79,7 +79,7 @@ jobs:
 
 - 支持 Linux、macOS 的 x64 和 arm64 Runner，与上游发布包保持一致。由于上游暂未提供 Windows 二进制，当前不支持 Windows。
 - 拒绝访问 `GITHUB_WORKSPACE` 之外的路径。
-- 执行前使用上游校验文件验证发布包 SHA-256；默认 v2.2.0 的发布资产还会与 Action 源码中固定的摘要进行二次核对。
+- 执行前使用上游校验文件验证发布包 SHA-256；默认 v2.3.0 的发布资产还会与 Action 源码中固定的摘要进行二次核对。
 - 使用 `RUNNER_TOOL_CACHE` 缓存已校验的格式化器，避免同一任务重复下载。
 - 始终先格式化临时副本；下载或解析失败不会导致工作区被部分修改。
 - 目录模式只复制普通 `.conf` 文件，避免复制无关仓库内容及软链接逃逸。

@@ -54,7 +54,7 @@ To format files in a workflow without committing them automatically:
 | `mode` | `check` | `check` reports differences and fails; `write` applies formatting in place. |
 | `indent` | `2` | Indentation width from 1 to 16. |
 | `indent-char` | `space` | `space`, `tab`, `\s`, or `\t`. |
-| `version` | `v2.2.0` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
+| `version` | `v2.3.0` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
 | `annotations` | `true` | Add workflow annotations for changed files. |
 
 ## Outputs
@@ -80,7 +80,7 @@ Outputs remain available when a `check` step uses `continue-on-error: true`:
 
 - Supports Linux and macOS runners on x64 and arm64, matching upstream release assets. Windows is not supported because `nginx-formatter` does not currently publish Windows binaries.
 - Rejects targets outside `GITHUB_WORKSPACE`.
-- Verifies the release archive against the upstream checksum file before execution. The default v2.2.0 assets are also checked against digests pinned in this action's source.
+- Verifies the release archive against the upstream checksum file before execution. The default v2.3.0 assets are also checked against digests pinned in this action's source.
 - Uses `RUNNER_TOOL_CACHE` to avoid downloading the same verified formatter version repeatedly in a job.
 - Formats a temporary copy first. Parse or download failures do not partially modify the workspace.
 - Copies only regular `.conf` files for directory targets, avoiding unrelated checkout data and symlink escapes.
