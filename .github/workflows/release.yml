@@ -127,12 +127,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
+          release_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          release_marker="<!-- nginx-format-action-release-commit:$release_commit -->"
+
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Release $GITHUB_REF_NAME already exists; leaving it unchanged."
+            release_body="$(gh release view "$GITHUB_REF_NAME" --json body --jq '.body')"
+            if ! grep -Fqx -- "$release_marker" <<< "$release_body"; then
+              echo "Release $GITHUB_REF_NAME does not record the current tag commit $release_commit" >&2
+              echo "Refusing to reuse a moved or externally created full-version tag." >&2
+              exit 1
+            fi
+            echo "Release $GITHUB_REF_NAME already exists for $release_commit; leaving it unchanged."
           else
             gh release create "$GITHUB_REF_NAME" \
               --verify-tag \
               --generate-notes \
+              --notes "$release_marker" \
               --title "Nginx Format Action $GITHUB_REF_NAME"
           fi
 

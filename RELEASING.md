@@ -29,11 +29,11 @@ Stable releases use semantic version tags such as `v1.0.0`. The release workflow
 
 ## GitHub Marketplace
 
-Creating a GitHub Release does not complete the first Marketplace publication. For the first public listing, open the `v1.0.0` release on GitHub, edit it, select **Publish this Action to the GitHub Marketplace**, choose the appropriate categories, and publish the update. The repository owner may first need to accept the Marketplace Developer Agreement, and GitHub requires two-factor authentication for this operation.
+Creating a GitHub Release does not complete the first Marketplace publication. For the first public listing, open the `v1.0.0` release on GitHub, edit it, select **Publish this Action to the GitHub Marketplace**, choose the appropriate categories, and publish the update. The repository owner may first need to accept the Marketplace Developer Agreement, and GitHub requires two-factor authentication for this operation. Keep the hidden `nginx-format-action-release-commit` comment in the release notes; the workflow uses it to reject moved full-version tags during a rerun.
 
 This owner-confirmed Marketplace step is intentionally not automated by the release workflow. Later compatible releases continue using the same Action listing.
 
-The workflow stops before publishing when the pushed tag does not equal `v` plus the version in `package.json`. Re-running a successful release is safe: an existing GitHub Release is left unchanged, while the major and minor tags are verified and updated again.
+The workflow stops before publishing when the pushed tag does not equal `v` plus the version in `package.json`. Re-running a successful release is safe only when the existing Release records the same commit as the full-version tag; otherwise the workflow fails before moving compatibility tags. A matching existing GitHub Release is left unchanged, while the major and minor tags are updated again.
 
 ## Future releases
 

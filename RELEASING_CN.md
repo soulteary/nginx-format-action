@@ -29,11 +29,11 @@
 
 ## GitHub Marketplace
 
-创建 GitHub Release 并不等于完成首次 Marketplace 上架。首次公开上架时，需要在 GitHub 中打开并编辑 `v1.0.0` Release，选择 **Publish this Action to the GitHub Marketplace**，设置合适的分类并提交更新。仓库所有者可能需要先接受 Marketplace Developer Agreement，GitHub 还会要求通过双因素认证。
+创建 GitHub Release 并不等于完成首次 Marketplace 上架。首次公开上架时，需要在 GitHub 中打开并编辑 `v1.0.0` Release，选择 **Publish this Action to the GitHub Marketplace**，设置合适的分类并提交更新。仓库所有者可能需要先接受 Marketplace Developer Agreement，GitHub 还会要求通过双因素认证。编辑 Release Notes 时应保留隐藏的 `nginx-format-action-release-commit` 注释；发布工作流重跑时会用它识别并拒绝被移动的完整版本标签。
 
 这一步需要所有者在网页中确认，因此发布工作流不会尝试自动代办。后续兼容版本将沿用同一个 Action Marketplace 页面。
 
-当标签与 `package.json` 中的版本不一致，或标签提交不属于 `main` 时，工作流会在发布前停止。重新运行已成功发布的工作流是安全的：已有 GitHub Release 不会被覆盖，但主版本和次版本引用会再次接受校验并更新。
+当标签与 `package.json` 中的版本不一致，或标签提交不属于 `main` 时，工作流会在发布前停止。只有已有 Release 记录的提交与完整版本标签一致时，重新运行才会继续；如果记录缺失或提交不一致，工作流会在移动兼容标签前失败。匹配的 GitHub Release 不会被覆盖，主版本和次版本引用会再次更新。
 
 ## 后续版本
 
