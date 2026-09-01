@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "action.yml"
+      - "package.json"
+      - "src/**"
+      - "dist/**"
+      - "test/**"
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Validate package version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          package_version="$(bun -e 'process.stdout.write(require("./package.json").version)')"
+          if [[ ! "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json version $package_version is not a stable semantic version" >&2
+            exit 1
+          fi
+
+          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
+
+      - name: Validate release tag
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_tag="v${PACKAGE_VERSION}"
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not a stable semantic version" >&2
+            exit 1
+          fi
+
+          if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $package_version" >&2
+            exit 1
+          fi
+
+          release_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$release_commit" origin/main; then
+            echo "Release commit $release_commit is not part of main" >&2
+            exit 1
+          fi
+
+      - name: Check JavaScript
+        run: bun run check
+
+      - name: Run unit tests
+        run: bun test
+
+      - name: Prepare integration fixture
+        run: |
+          mkdir -p test/work
+          cp test/fixtures/unformatted/nginx.conf test/work/nginx.conf
+
+      - name: Run released action in write mode
+        id: write
+        uses: ./
+        with:
+          path: test/work/nginx.conf
+          mode: write
+
+      - name: Verify write result
+        env:
+          CHANGED: ${{ steps.write.outputs.changed }}
+          FORMATTER_VERSION: ${{ steps.write.outputs.formatter-version }}
+        run: |
+          test "$CHANGED" = "true"
+          test "$FORMATTER_VERSION" = "v2.3.0"
+          test -s test/work/nginx.conf
+
+      - name: Verify formatted result is stable
+        uses: ./
+        with:
+          path: test/work/nginx.conf
+          mode: check
+
+  publish:
+    name: Publish release
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          release_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          release_marker="<!-- nginx-format-action-release-commit:$release_commit -->"
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            release_body="$(gh release view "$GITHUB_REF_NAME" --json body --jq '.body')"
+            if ! grep -Fqx -- "$release_marker" <<< "$release_body"; then
+              echo "Release $GITHUB_REF_NAME does not record the current tag commit $release_commit" >&2
+              echo "Refusing to reuse a moved or externally created full-version tag." >&2
+              exit 1
+            fi
+            echo "Release $GITHUB_REF_NAME already exists for $release_commit; leaving it unchanged."
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --generate-notes \
+              --notes "$release_marker" \
+              --title "Nginx Format Action $GITHUB_REF_NAME"
+          fi
+
+      - name: Update major and minor version tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${GITHUB_REF_NAME#v}"
+          major_tag="v${version%%.*}"
+          minor_tag="v${version%.*}"
+          release_commit="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          git push --force origin \
+            "$release_commit:refs/tags/$major_tag" \
+            "$release_commit:refs/tags/$minor_tag"
+          echo "Updated $major_tag and $minor_tag to $release_commit"

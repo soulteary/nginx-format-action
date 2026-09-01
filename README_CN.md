@@ -10,7 +10,7 @@ Action 会下载 `nginx-formatter` 官方发布包并校验 SHA-256，在隔离�
 
 ## 快速开始
 
-推荐在 Pull Request 中使用 `check` 模式，发现格式不一致时让工作流失败：
+创建 `.github/workflows/nginx-format.yml`。下面是完整的 Pull Request 检查工作流：它会检查仓库中的所有 `.conf` 文件，并在需要格式化时通过文件标注提示问题并让工作流失败。
 
 ```yaml
 name: Nginx format
@@ -27,14 +27,39 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: soulteary/nginx-format-action@v1
         with:
-          path: nginx
+          path: .
           mode: check
 ```
 
-如需在工作流中直接格式化文件（Action 不会自动提交）：
+`@v1` 会跟随最新的 v1 兼容版本；使用 `@v1.0.0` 可以固定到首个稳定版本。下面的 `version` 参数用于选择 `nginx-formatter` 二进制版本，与 Action 自身版本相互独立。
+
+| Action 引用 | 行为 | 推荐场景 |
+| --- | --- | --- |
+| `@v1` | 跟随最新的 v1 兼容版本 | 大多数工作流 |
+| `@v1.0` | 跟随最新的 v1.0 补丁版本 | 受控补丁更新 |
+| `@v1.0.0` | 固定到准确的稳定版本标签 | 指定准确发布版本 |
+| `@<commit-sha>` | 固定到不可变源码提交 | 严格供应链固定 |
+
+## 使用示例
+
+### 检查一个 Nginx 配置目录
+
+传入目录后，会递归检查其中所有普通 `.conf` 文件：
+
+```yaml
+- uses: soulteary/nginx-format-action@v1
+  with:
+    path: deploy/nginx
+    mode: check
+    version: v2.3.0
+```
+
+### 格式化单个文件
+
+`write` 模式会修改检出的文件，但不会自动提交或推送：
 
 ```yaml
 - uses: soulteary/nginx-format-action@v1
@@ -43,6 +68,65 @@ jobs:
     mode: write
     indent: 4
     indent-char: space
+```
+
+### 手动格式化并提交
+
+下面的工作流仅支持手动触发，会格式化 `nginx` 目录，并只在存在变化时创建提交：
+
+```yaml
+name: Format Nginx
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: nginx-format
+        uses: soulteary/nginx-format-action@v1
+        with:
+          path: nginx
+          mode: write
+
+      - name: Commit formatted files
+        if: steps.nginx-format.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- nginx
+          git commit -m "style: format Nginx configuration"
+          git push
+```
+
+不要为运行不可信 Pull Request 代码的工作流授予 `contents: write`。推荐的 Pull Request 示例仅使用只读权限和 `check` 模式。
+
+### 读取输出但不阻断工作流
+
+只应在格式差异仅用于提示时使用 `continue-on-error`。存在差异时，GitHub 仍会把 Action 步骤显示为失败，但任务会继续执行：
+
+```yaml
+- id: nginx-format
+  continue-on-error: true
+  uses: soulteary/nginx-format-action@v1
+  with:
+    path: nginx
+    mode: check
+
+- name: Report result
+  if: always()
+  env:
+    CHANGED: ${{ steps.nginx-format.outputs.changed }}
+    CHANGED_FILES: ${{ steps.nginx-format.outputs.changed-files }}
+  run: |
+    echo "Changed: $CHANGED"
+    printf '%s\n' "$CHANGED_FILES"
 ```
 
 ## 输入参数
@@ -63,17 +147,6 @@ jobs:
 | `changed` | 存在格式差异时为 `true`，否则为 `false`。 |
 | `changed-files` | 存在差异的文件路径，以换行分隔。 |
 | `formatter-version` | 本次使用的格式化器版本。 |
-
-当 `check` 步骤配置 `continue-on-error: true` 时，仍然可以读取输出：
-
-```yaml
-- id: nginx-format
-  continue-on-error: true
-  uses: soulteary/nginx-format-action@v1
-
-- if: always()
-  run: echo '${{ steps.nginx-format.outputs.changed-files }}'
-```
 
 ## 行为与安全性
 
@@ -100,6 +173,10 @@ bun test
 ```
 
 CI 还会使用本 Action 对已格式化和未格式化的测试配置执行集成验证。
+
+## 发布
+
+稳定版本使用 `v1.0.0` 这类完整版本标签，并维护 `v1`、`v1.0` 这类可移动兼容引用。经过校验的发布流程、准确命令和首次 Marketplace 上架步骤见 [RELEASING_CN.md](RELEASING_CN.md)。
 
 ## 许可证
 
