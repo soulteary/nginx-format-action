@@ -27,6 +27,17 @@ Stable releases use semantic version tags such as `v1.0.0`. The release workflow
 
 5. Check the generated release notes and verify the example workflow in a consumer repository.
 
+Do not create the GitHub Release separately after pushing the tag; the tag workflow creates it. If a Release is created from the GitHub UI at the same time as its new tag, the workflow can safely adopt it because the tag creation event is new.
+
+### Recover an existing unmarked Release
+
+If a manually created Release already exists and the tag workflow stopped with `does not record the current tag commit`, verify that the full-version tag, the Release, and `main` all refer to the intended commit. Then open **Actions → Release → Run workflow** and use:
+
+- `tag`: the full release tag, such as `v1.0.0`
+- `adopt-existing-release`: enabled
+
+The manual run repeats all version, ancestry, Bun, and integration checks. It prepends the hidden commit marker to an unmarked Release, then updates its major and minor compatibility tags. It never replaces a different existing commit marker.
+
 ## GitHub Marketplace
 
 Creating a GitHub Release does not complete the first Marketplace publication. For the first public listing, open the `v1.0.0` release on GitHub, edit it, select **Publish this Action to the GitHub Marketplace**, choose the appropriate categories, and publish the update. The repository owner may first need to accept the Marketplace Developer Agreement, and GitHub requires two-factor authentication for this operation. Keep the hidden `nginx-format-action-release-commit` comment in the release notes; the workflow uses it to reject moved full-version tags during a rerun.

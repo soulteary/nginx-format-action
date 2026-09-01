@@ -27,6 +27,17 @@
 
 5. 检查自动生成的 Release Notes，并在一个实际使用仓库中验证示例工作流。
 
+推送标签后不需要再单独创建 GitHub Release，标签工作流会自动完成。如果通过 GitHub 页面同时创建新标签和 Release，工作流能够利用“新标签创建事件”安全接管该 Release。
+
+### 修复缺少提交标记的已有 Release
+
+如果手动创建的 Release 已经存在，标签工作流提示 `does not record the current tag commit` 并停止，应先确认完整版本标签、Release 和 `main` 都对应预期提交，然后打开 **Actions → Release → Run workflow**，填写：
+
+- `tag`：完整版本标签，例如 `v1.0.0`
+- `adopt-existing-release`：启用
+
+手动任务会重新执行版本、提交归属、Bun 测试和集成测试校验；通过后为没有标记的 Release 补充隐藏提交标记，并更新主版本和次版本兼容标签。若 Release 已记录另一个提交，任务始终拒绝覆盖。
+
 ## GitHub Marketplace
 
 创建 GitHub Release 并不等于完成首次 Marketplace 上架。首次公开上架时，需要在 GitHub 中打开并编辑 `v1.0.0` Release，选择 **Publish this Action to the GitHub Marketplace**，设置合适的分类并提交更新。仓库所有者可能需要先接受 Marketplace Developer Agreement，GitHub 还会要求通过双因素认证。编辑 Release Notes 时应保留隐藏的 `nginx-format-action-release-commit` 注释；发布工作流重跑时会用它识别并拒绝被移动的完整版本标签。
