@@ -11,7 +11,7 @@ The action downloads an official formatter release, verifies its SHA-256 checksu
 
 ## Quick start
 
-The recommended pull-request workflow fails when a configuration is not formatted:
+Create `.github/workflows/nginx-format.yml`. This complete pull-request workflow checks every `.conf` file in the repository and fails with file annotations when formatting is required:
 
 ```yaml
 name: Nginx format
@@ -28,14 +28,38 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: soulteary/nginx-format-action@v1
         with:
-          path: nginx
+          path: .
           mode: check
 ```
 
-To format files in a workflow without committing them automatically:
+`@v1` follows the latest compatible v1 release. Use `@v1.0.0` to pin this Action to the first stable release. The `version` input below selects the `nginx-formatter` binary and is independent of the Action version.
+
+| Action reference | Behavior | Recommended use |
+| --- | --- | --- |
+| `@v1` | Moves to the latest compatible v1 release | Most workflows |
+| `@v1.0.0` | Fixed stable release | Reproducible version pinning |
+| `@<commit-sha>` | Immutable source revision | Strict supply-chain pinning |
+
+## Examples
+
+### Check one Nginx directory
+
+Use a directory path to recursively check its regular `.conf` files:
+
+```yaml
+- uses: soulteary/nginx-format-action@v1
+  with:
+    path: deploy/nginx
+    mode: check
+    version: v2.3.0
+```
+
+### Format one file
+
+`write` mode changes the checked-out file but never commits or pushes it:
 
 ```yaml
 - uses: soulteary/nginx-format-action@v1
@@ -44,6 +68,65 @@ To format files in a workflow without committing them automatically:
     mode: write
     indent: 4
     indent-char: space
+```
+
+### Format and commit manually
+
+This workflow runs only when started manually, formats the `nginx` directory, and commits a change only when necessary:
+
+```yaml
+name: Format Nginx
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: nginx-format
+        uses: soulteary/nginx-format-action@v1
+        with:
+          path: nginx
+          mode: write
+
+      - name: Commit formatted files
+        if: steps.nginx-format.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- nginx
+          git commit -m "style: format Nginx configuration"
+          git push
+```
+
+Do not grant `contents: write` to workflows that run untrusted pull-request code. The recommended pull-request example uses read-only permissions and `check` mode.
+
+### Read outputs without blocking a workflow
+
+Use `continue-on-error` only when formatting differences are informational. GitHub will still render this action step as failed when differences exist, even though the job continues:
+
+```yaml
+- id: nginx-format
+  continue-on-error: true
+  uses: soulteary/nginx-format-action@v1
+  with:
+    path: nginx
+    mode: check
+
+- name: Report result
+  if: always()
+  env:
+    CHANGED: ${{ steps.nginx-format.outputs.changed }}
+    CHANGED_FILES: ${{ steps.nginx-format.outputs.changed-files }}
+  run: |
+    echo "Changed: $CHANGED"
+    printf '%s\n' "$CHANGED_FILES"
 ```
 
 ## Inputs
@@ -64,17 +147,6 @@ To format files in a workflow without committing them automatically:
 | `changed` | `true` when formatting differs, otherwise `false`. |
 | `changed-files` | Newline-separated paths that differ. |
 | `formatter-version` | Formatter version used by the action. |
-
-Outputs remain available when a `check` step uses `continue-on-error: true`:
-
-```yaml
-- id: nginx-format
-  continue-on-error: true
-  uses: soulteary/nginx-format-action@v1
-
-- if: always()
-  run: echo '${{ steps.nginx-format.outputs.changed-files }}'
-```
 
 ## Behavior and security
 
@@ -101,6 +173,10 @@ bun test
 ```
 
 The CI workflow also runs the action itself against formatted and unformatted fixtures.
+
+## Releasing
+
+Stable releases use immutable tags such as `v1.0.0` and a moving major alias such as `v1`. See [RELEASING.md](RELEASING.md) for the validated release workflow and exact publishing commands.
 
 ## License
 
