@@ -177,7 +177,7 @@ The CI workflow also runs the action itself against formatted and unformatted fi
 
 ## Releasing
 
-Stable releases use full-version tags such as `v1.0.0` and moving compatibility aliases such as `v1` and `v1.0`. See [RELEASING.md](RELEASING.md) for the validated release workflow and exact publishing commands.
+Stable releases use full-version tags such as `v1.0.0` and moving compatibility aliases such as `v1` and `v1.0`. See [RELEASING.md](RELEASING.md) for the validated release workflow, exact publishing commands, and the owner-confirmed first Marketplace publication step.
 
 ## License
 
