@@ -90,11 +90,13 @@ jobs:
 
 ## 开发
 
-需要 Node.js 24 或更高版本；运行时不依赖任何 npm 软件包。
+项目开发、语法检查和测试统一使用 Bun 1.4 或更高版本；Action 运行时不依赖任何第三方软件包。
+
+GitHub 当前仍通过 `action.yml` 声明的运行时执行 JavaScript Action，因此保留 `runs.using: node24` 作为 GitHub 托管的 Action 宿主。使用者不需要自行安装 Node.js 或 Bun。
 
 ```bash
-npm run check
-npm test
+bun run check
+bun test
 ```
 
 CI 还会使用本 Action 对已格式化和未格式化的测试配置执行集成验证。

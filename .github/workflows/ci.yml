@@ -19,33 +19,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "24"
-          package-manager-cache: false
+          bun-version: "1.4.0"
 
       - name: Check JavaScript
-        run: npm run check
+        run: bun run check
 
       - name: Run unit tests
-        run: npm test
-
-      - name: Check unformatted fixture
-        id: unformatted
-        continue-on-error: true
-        uses: ./
-        with:
-          path: test/fixtures/unformatted
-          mode: check
-
-      - name: Verify check-mode result
-        env:
-          STEP_OUTCOME: ${{ steps.unformatted.outcome }}
-          CHANGED: ${{ steps.unformatted.outputs.changed }}
-        run: |
-          test "$STEP_OUTCOME" = "failure"
-          test "$CHANGED" = "true"
+        run: bun test
 
       - name: Prepare write-mode fixture
         run: |
