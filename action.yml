@@ -1,0 +1,45 @@
+name: Nginx Format
+description: Check or format Nginx configuration files with nginx-formatter
+author: soulteary
+
+branding:
+  icon: align-left
+  color: green
+
+inputs:
+  path:
+    description: File or directory to format. Directories are scanned recursively for .conf files.
+    required: false
+    default: .
+  mode:
+    description: Use check to fail on formatting differences, or write to update files in place.
+    required: false
+    default: check
+  indent:
+    description: Number of indentation characters.
+    required: false
+    default: "2"
+  indent-char:
+    description: Indentation character accepted by nginx-formatter (space, tab, \s, or \t).
+    required: false
+    default: space
+  version:
+    description: nginx-formatter release version to use.
+    required: false
+    default: v2.3.0
+  annotations:
+    description: Emit GitHub workflow annotations for files that need formatting.
+    required: false
+    default: "true"
+
+outputs:
+  changed:
+    description: Whether one or more files differ from nginx-formatter output.
+  changed-files:
+    description: Newline-separated paths that differ from nginx-formatter output.
+  formatter-version:
+    description: The nginx-formatter version used by this run.
+
+runs:
+  using: node24
+  main: dist/index.js
