@@ -50,7 +50,7 @@ To format files in a workflow without committing them automatically:
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `path` | `.` | A file or directory inside `GITHUB_WORKSPACE`. Directories are scanned recursively for `.conf` files. A single file can use any extension. |
+| `path` | `.` | A file or directory inside `GITHUB_WORKSPACE`. Directories are scanned recursively for regular `.conf` files; symlinks are skipped. A single file can use any extension. |
 | `mode` | `check` | `check` reports differences and fails; `write` applies formatting in place. |
 | `indent` | `2` | Indentation width from 1 to 16. |
 | `indent-char` | `space` | `space`, `tab`, `\s`, or `\t`. |
@@ -83,6 +83,7 @@ Outputs remain available when a `check` step uses `continue-on-error: true`:
 - Verifies the release archive against the upstream checksum file before execution. The default v2.2.0 assets are also checked against digests pinned in this action's source.
 - Uses `RUNNER_TOOL_CACHE` to avoid downloading the same verified formatter version repeatedly in a job.
 - Formats a temporary copy first. Parse or download failures do not partially modify the workspace.
+- Copies only regular `.conf` files for directory targets, avoiding unrelated checkout data and symlink escapes.
 - Preserves existing file permissions in `write` mode.
 - Does not commit or push changes and does not require write permissions.
 

@@ -9,6 +9,7 @@ const test = require('node:test');
 
 const action = require('../src/main.js');
 const repositoryRoot = path.resolve(__dirname, '..');
+const temporaryPrefix = 'nginx-format-action-';
 
 function makeFakeFormatter(root) {
   const fake = path.join(root, 'nginx-formatter');
@@ -31,7 +32,7 @@ const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const file = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(file);
-    if (entry.isFile() && entry.name.endsWith('.conf')) format(file);
+    if ((entry.isFile() || entry.isSymbolicLink()) && entry.name.endsWith('.conf')) format(file);
   }
 };
 if (fs.statSync(input).isDirectory()) walk(input); else format(input);
@@ -167,6 +168,65 @@ test('directory mode only compares .conf files', () => {
     const result = runAction(workspace, fake, { path: '.', mode: 'check' });
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.outputs, /changed<<[^\n]+\nfalse\n/);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('directory preparation copies only regular .conf files', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-copy-'));
+  try {
+    const fake = makeFakeFormatter(workspace);
+    const configs = path.join(workspace, 'configs');
+    fs.mkdirSync(path.join(configs, 'nested'), { recursive: true });
+    fs.writeFileSync(path.join(configs, 'nested', 'site.conf'), 'server {\n  listen 80;\n}\n');
+    fs.writeFileSync(path.join(configs, 'large-build-output.bin'), 'unrelated');
+
+    const prepared = action.prepareFormattedCopy(configs, fake, 2, 'space');
+    try {
+      assert.equal(fs.existsSync(path.join(prepared.copied, 'nested', 'site.conf')), true);
+      assert.equal(fs.existsSync(path.join(prepared.copied, 'large-build-output.bin')), false);
+    } finally {
+      fs.rmSync(prepared.tempRoot, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('directory mode skips .conf symlinks and cannot modify their targets', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-symlink-'));
+  try {
+    const fake = makeFakeFormatter(workspace);
+    const configs = path.join(workspace, 'configs');
+    const target = path.join(workspace, 'linked-target.txt');
+    fs.mkdirSync(configs);
+    fs.writeFileSync(target, 'server{listen 80;}\n');
+    fs.symlinkSync(target, path.join(configs, 'linked.conf'));
+
+    const result = runAction(workspace, fake, { path: 'configs', mode: 'check' });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(fs.readFileSync(target, 'utf8'), 'server{listen 80;}\n');
+    assert.match(result.outputs, /changed<<[^\n]+\nfalse\n/);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('preparation removes its temporary directory when formatting fails', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-failure-'));
+  try {
+    const fake = path.join(workspace, 'failing-formatter');
+    const configs = path.join(workspace, 'configs');
+    fs.mkdirSync(configs);
+    fs.writeFileSync(path.join(configs, 'bad.conf'), 'invalid');
+    fs.writeFileSync(fake, '#!/bin/sh\nexit 2\n', { mode: 0o755 });
+    const before = new Set(fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith(temporaryPrefix)));
+
+    assert.throws(() => action.prepareFormattedCopy(configs, fake, 2, 'space'), /code 2/);
+
+    const after = new Set(fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith(temporaryPrefix)));
+    assert.deepEqual(after, before);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }

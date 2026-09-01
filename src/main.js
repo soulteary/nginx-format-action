@@ -210,38 +210,48 @@ function listConfigFiles(root) {
 
 function prepareFormattedCopy(target, binary, indent, indentChar) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-action-'));
-  const stat = fs.statSync(target);
-  const copied = path.join(tempRoot, stat.isDirectory() ? 'config' : path.basename(target));
+  try {
+    const stat = fs.statSync(target);
+    const copied = path.join(tempRoot, stat.isDirectory() ? 'config' : path.basename(target));
 
-  if (stat.isDirectory()) {
-    fs.cpSync(target, copied, { recursive: true, preserveTimestamps: true });
-    runCommand(binary, [
-      'format',
-      '--input',
-      copied,
-      '--output',
-      copied,
-      '--indent',
-      String(indent),
-      '--char',
-      indentChar,
-    ]);
-  } else if (stat.isFile()) {
-    fs.copyFileSync(target, copied);
-    runCommand(binary, [
-      'format',
-      '--input',
-      copied,
-      '--indent',
-      String(indent),
-      '--char',
-      indentChar,
-    ]);
-  } else {
+    if (stat.isDirectory()) {
+      fs.mkdirSync(copied);
+      for (const relative of listConfigFiles(target)) {
+        const source = path.join(target, relative);
+        const destination = path.join(copied, relative);
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.copyFileSync(source, destination);
+      }
+      runCommand(binary, [
+        'format',
+        '--input',
+        copied,
+        '--output',
+        copied,
+        '--indent',
+        String(indent),
+        '--char',
+        indentChar,
+      ]);
+    } else if (stat.isFile()) {
+      fs.copyFileSync(target, copied);
+      runCommand(binary, [
+        'format',
+        '--input',
+        copied,
+        '--indent',
+        String(indent),
+        '--char',
+        indentChar,
+      ]);
+    } else {
+      throw new Error('path must refer to a regular file or directory');
+    }
+    return { tempRoot, copied, isDirectory: stat.isDirectory() };
+  } catch (error) {
     fs.rmSync(tempRoot, { recursive: true, force: true });
-    throw new Error('path must refer to a regular file or directory');
+    throw error;
   }
-  return { tempRoot, copied, isDirectory: stat.isDirectory() };
 }
 
 function changedFiles(target, copied, isDirectory) {
@@ -385,6 +395,7 @@ module.exports = {
   normalizeVersion,
   parseBoolean,
   PINNED_CHECKSUMS,
+  prepareFormattedCopy,
   resolvePlatform,
   resolveWorkspaceTarget,
   run,
