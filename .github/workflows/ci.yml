@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Check JavaScript
+        run: npm run check
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Check unformatted fixture
+        id: unformatted
+        continue-on-error: true
+        uses: ./
+        with:
+          path: test/fixtures/unformatted
+          mode: check
+
+      - name: Verify check-mode result
+        env:
+          STEP_OUTCOME: ${{ steps.unformatted.outcome }}
+          CHANGED: ${{ steps.unformatted.outputs.changed }}
+        run: |
+          test "$STEP_OUTCOME" = "failure"
+          test "$CHANGED" = "true"
+
+      - name: Prepare write-mode fixture
+        run: |
+          mkdir -p test/work
+          cp test/fixtures/unformatted/nginx.conf test/work/nginx.conf
+
+      - name: Format write-mode fixture
+        id: write
+        uses: ./
+        with:
+          path: test/work/nginx.conf
+          mode: write
+
+      - name: Verify write-mode result
+        env:
+          CHANGED: ${{ steps.write.outputs.changed }}
+        run: |
+          test "$CHANGED" = "true"
+          test -s test/work/nginx.conf
+
+      - name: Check write-mode result is stable
+        id: stable
+        uses: ./
+        with:
+          path: test/work/nginx.conf
+          mode: check
+
+      - name: Verify stable check result
+        env:
+          CHANGED: ${{ steps.stable.outputs.changed }}
+        run: test "$CHANGED" = "false"

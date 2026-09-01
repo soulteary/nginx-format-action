@@ -1,0 +1,14 @@
+{
+  "name": "nginx-format-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Check or format Nginx configuration files in GitHub Actions",
+  "license": "Apache-2.0",
+  "scripts": {
+    "check": "node --check src/main.js && node --check dist/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
