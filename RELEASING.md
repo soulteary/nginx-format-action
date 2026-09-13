@@ -13,16 +13,16 @@ Stable releases use semantic version tags such as `v1.0.0`. The release workflow
    ```bash
    git switch main
    git pull --ff-only
-   git tag -a v1.0.1 -m "Nginx Format Action v1.0.1"
-   git push origin v1.0.1
+   git tag -a v1.1.0 -m "Nginx Format Action v1.1.0"
+   git push origin v1.1.0
    ```
 
-4. Wait for the **Release** workflow to finish. It creates the `v1.0.1` GitHub Release and updates `v1` and `v1.0`, so workflows can choose the appropriate reference:
+4. Wait for the **Release** workflow to finish. It creates the `v1.1.0` GitHub Release and updates `v1` and `v1.1`, so workflows can choose the appropriate reference:
 
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # latest compatible v1 release
-   - uses: soulteary/nginx-format-action@v1.0     # latest compatible v1.0 patch
-   - uses: soulteary/nginx-format-action@v1.0.1   # the exact tag just pushed
+   - uses: soulteary/nginx-format-action@v1.1     # latest compatible v1.1 patch
+   - uses: soulteary/nginx-format-action@v1.1.0   # the exact tag just pushed
    ```
 
 5. Check the generated release notes and verify the example workflow in a consumer repository.

@@ -13,16 +13,16 @@
    ```bash
    git switch main
    git pull --ff-only
-   git tag -a v1.0.1 -m "Nginx Format Action v1.0.1"
-   git push origin v1.0.1
+   git tag -a v1.1.0 -m "Nginx Format Action v1.1.0"
+   git push origin v1.1.0
    ```
 
-4. 等待 **Release** 工作流完成。工作流会创建 `v1.0.1` GitHub Release 并更新 `v1` 和 `v1.0`，使用方可以选择以下引用方式：
+4. 等待 **Release** 工作流完成。工作流会创建 `v1.1.0` GitHub Release 并更新 `v1` 和 `v1.1`，使用方可以选择以下引用方式：
 
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # 跟随 v1 最新兼容版本
-   - uses: soulteary/nginx-format-action@v1.0     # 跟随 v1.0 最新补丁版本
-   - uses: soulteary/nginx-format-action@v1.0.1   # 固定到刚推送的准确标签
+   - uses: soulteary/nginx-format-action@v1.1     # 跟随 v1.1 最新补丁版本
+   - uses: soulteary/nginx-format-action@v1.1.0   # 固定到刚推送的准确标签
    ```
 
 5. 检查自动生成的 Release Notes，并在一个实际使用仓库中验证示例工作流。
