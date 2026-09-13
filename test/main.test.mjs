@@ -59,6 +59,7 @@ function runAction(workspace, fakeFormatter, inputs = {}) {
     'INPUT_INDENT-CHAR': inputs.indentChar || 'space',
     INPUT_VERSION: inputs.version || 'v2.3.0',
     INPUT_ANNOTATIONS: inputs.annotations || 'false',
+    INPUT_EXTENSIONS: inputs.extensions || '.conf',
   };
   const result = spawnSync(process.execPath, [path.join(repositoryRoot, 'dist/index.js')], {
     cwd: workspace,
@@ -154,6 +155,67 @@ test('write mode atomically updates content and preserves permissions', () => {
     assert.equal(fs.readFileSync(config, 'utf8'), 'server {\n  listen 80;\n}\n');
     assert.equal(fs.statSync(config).mode & 0o777, 0o640);
     assert.match(result.outputs, /changed<<[^\n]+\ntrue\n/);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('normalizes the extensions input', () => {
+  assert.deepEqual(action.DEFAULT_EXTENSIONS, ['.conf']);
+  assert.deepEqual(action.normalizeExtensions('.conf'), ['.conf']);
+  // A leading dot is optional, matching is case-insensitive, duplicates collapse.
+  assert.deepEqual(action.normalizeExtensions('conf'), ['.conf']);
+  assert.deepEqual(action.normalizeExtensions('conf, .nginx'), ['.conf', '.nginx']);
+  assert.deepEqual(action.normalizeExtensions('.CONF, conf'), ['.conf']);
+  for (const bad of ['', '   ', ',', '.', 'a/b', 'a\\b']) {
+    assert.throws(() => action.normalizeExtensions(bad), undefined, `expected ${JSON.stringify(bad)} to be refused`);
+  }
+});
+
+test('scanning covers only the configured extensions', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-ext-'));
+  try {
+    fs.mkdirSync(path.join(root, 'conf.d'));
+    fs.writeFileSync(path.join(root, 'conf.d', 'site.conf'), 'a');
+    fs.writeFileSync(path.join(root, 'upstream.nginx'), 'b');
+    fs.writeFileSync(path.join(root, 'include'), 'c');
+    fs.writeFileSync(path.join(root, 'notes.txt'), 'd');
+
+    // The default is unchanged, which is exactly the gap: two nginx files here
+    // are invisible to it, so a passing check says nothing about them.
+    assert.deepEqual(action.listConfigFiles(root), [path.join('conf.d', 'site.conf')]);
+
+    assert.deepEqual(action.listConfigFiles(root, ['.conf', '.nginx']), [
+      path.join('conf.d', 'site.conf'),
+      'upstream.nginx',
+    ]);
+
+    // Case-insensitive, and an extension may match a whole extension-less name.
+    fs.writeFileSync(path.join(root, 'SITE.CONF'), 'e');
+    assert.ok(action.listConfigFiles(root, ['.conf']).includes('SITE.CONF'));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('directory mode honours a widened extensions input', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-widen-'));
+  try {
+    const fake = makeFakeFormatter(workspace);
+    // Deliberately UNFORMATTED: an already-formatted fixture cannot tell whether
+    // the formatter ran on it, which is the whole point of this test.
+    fs.writeFileSync(path.join(workspace, 'site.nginx'), 'server { listen 80; }');
+
+    // Default: the .nginx file is not scanned, so the check trivially passes.
+    const ignored = runAction(workspace, fake, { path: '.', mode: 'check' });
+    assert.equal(ignored.status, 0, ignored.stderr || ignored.stdout);
+    assert.match(ignored.outputs, /changed<<[^\n]+\nfalse\n/);
+
+    // Widened: the file is in scope, is not formatted, and the check must say so.
+    const scanned = runAction(workspace, fake, { path: '.', mode: 'check', extensions: 'conf,nginx' });
+    assert.match(scanned.stdout, /matching: \.conf, \.nginx/);
+    assert.match(scanned.outputs, /changed<<[^\n]+\ntrue\n/);
+    assert.match(scanned.outputs, /changed-files<<[^\n]+\nsite\.nginx\n/);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }

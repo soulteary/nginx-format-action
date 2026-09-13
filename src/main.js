@@ -20,6 +20,36 @@ function getInput(name, defaultValue = '') {
   return value === undefined || value.trim() === '' ? defaultValue : value.trim();
 }
 
+const DEFAULT_EXTENSIONS = Object.freeze(['.conf']);
+
+// Directory mode only ever looked at ".conf". Anything else -- an
+// extension-less include, a ".nginx", a "conf.d/upstream" -- was skipped in
+// silence, so "check mode passed" quietly meant "the .conf files are
+// formatted" rather than "this directory is formatted". The set is now
+// configurable, and the resolved list is logged so the scope of a passing
+// check is visible rather than assumed.
+function normalizeExtensions(value) {
+  const parts = String(value)
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part !== '');
+  if (parts.length === 0) {
+    throw new Error('extensions must list at least one file extension');
+  }
+  const seen = [];
+  for (const part of parts) {
+    if (part.includes('/') || part.includes('\\')) {
+      throw new Error(`extensions must not contain a path separator: ${part}`);
+    }
+    const withDot = part.startsWith('.') ? part : `.${part}`;
+    if (withDot === '.') {
+      throw new Error('extensions must not be a bare dot');
+    }
+    if (!seen.includes(withDot)) seen.push(withDot);
+  }
+  return seen;
+}
+
 function parseBoolean(value, name) {
   const normalized = String(value).trim().toLowerCase();
   if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
@@ -190,7 +220,12 @@ async function installFormatter(version) {
   }
 }
 
-function listConfigFiles(root) {
+function matchesExtension(name, extensions) {
+  const lowered = name.toLowerCase();
+  return extensions.some((extension) => lowered.endsWith(extension));
+}
+
+function listConfigFiles(root, extensions = DEFAULT_EXTENSIONS) {
   const files = [];
   const pending = [''];
   while (pending.length > 0) {
@@ -202,13 +237,13 @@ function listConfigFiles(root) {
     for (const entry of entries) {
       const relative = path.join(relativeDir, entry.name);
       if (entry.isDirectory()) pending.push(relative);
-      if (entry.isFile() && entry.name.endsWith('.conf')) files.push(relative);
+      if (entry.isFile() && matchesExtension(entry.name, extensions)) files.push(relative);
     }
   }
   return files.sort();
 }
 
-function prepareFormattedCopy(target, binary, indent, indentChar) {
+function prepareFormattedCopy(target, binary, indent, indentChar, extensions = DEFAULT_EXTENSIONS) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-action-'));
   try {
     const stat = fs.statSync(target);
@@ -216,23 +251,38 @@ function prepareFormattedCopy(target, binary, indent, indentChar) {
 
     if (stat.isDirectory()) {
       fs.mkdirSync(copied);
-      for (const relative of listConfigFiles(target)) {
+      const selected = listConfigFiles(target, extensions);
+      for (const relative of selected) {
         const source = path.join(target, relative);
         const destination = path.join(copied, relative);
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.copyFileSync(source, destination);
       }
-      runCommand(binary, [
-        'format',
-        '--input',
-        copied,
-        '--output',
-        copied,
-        '--indent',
-        String(indent),
-        '--char',
-        indentChar,
-      ]);
+      // Format each selected file individually rather than handing the whole
+      // directory to the formatter. `format --input <dir>` walks with a
+      // hard-coded suffix filter upstream --
+      //
+      //     if !strings.HasSuffix(rel, ".conf") { return nil }
+      //     (nginx-formatter internal/updater/updater.go, UpdateConfInDir)
+      //
+      // so a widened `extensions` set would copy a .nginx file in, leave it
+      // unformatted, compare it against an identical source and report
+      // `changed: false` -- while the scope log claimed it had been checked.
+      // That is worse than not scanning it at all. The single-file entry point
+      // is documented upstream as the one that "does not filter by the .conf
+      // suffix, so any file can be formatted", and applies the same
+      // transformation, so .conf results are unchanged.
+      for (const relative of selected) {
+        runCommand(binary, [
+          'format',
+          '--input',
+          path.join(copied, relative),
+          '--indent',
+          String(indent),
+          '--char',
+          indentChar,
+        ]);
+      }
     } else if (stat.isFile()) {
       fs.copyFileSync(target, copied);
       runCommand(binary, [
@@ -254,8 +304,8 @@ function prepareFormattedCopy(target, binary, indent, indentChar) {
   }
 }
 
-function changedFiles(target, copied, isDirectory) {
-  const candidates = isDirectory ? listConfigFiles(target) : [''];
+function changedFiles(target, copied, isDirectory, extensions = DEFAULT_EXTENSIONS) {
+  const candidates = isDirectory ? listConfigFiles(target, extensions) : [''];
   return candidates.filter((relative) => {
     const sourceFile = relative ? path.join(target, relative) : target;
     const formattedFile = relative ? path.join(copied, relative) : copied;
@@ -336,6 +386,7 @@ async function main() {
   const indentChar = normalizeIndentChar(getInput('indent-char', 'space'));
   const version = normalizeVersion(getInput('version', DEFAULT_VERSION));
   const annotations = parseBoolean(getInput('annotations', 'true'), 'annotations');
+  const extensions = normalizeExtensions(getInput('extensions', DEFAULT_EXTENSIONS.join(',')));
 
   if (!['check', 'write'].includes(mode)) throw new Error('mode must be check or write');
   if (!/^\d+$/.test(indentText) || Number(indentText) < 1 || Number(indentText) > 16) {
@@ -343,10 +394,15 @@ async function main() {
   }
   const { target, relative } = resolveWorkspaceTarget(workspace, inputPath);
   const binary = await installFormatter(version);
-  const formatted = prepareFormattedCopy(target, binary, Number(indentText), indentChar);
+  const formatted = prepareFormattedCopy(target, binary, Number(indentText), indentChar, extensions);
 
   try {
-    const differences = changedFiles(target, formatted.copied, formatted.isDirectory);
+    const differences = changedFiles(target, formatted.copied, formatted.isDirectory, extensions);
+    if (formatted.isDirectory) {
+      // A passing check only covers what was scanned, so state the scope.
+      const scanned = listConfigFiles(target, extensions).length;
+      console.log(`Scanned ${scanned} file(s) under ${relative} matching: ${extensions.join(', ')}`);
+    }
     const displayFiles = differences.map((file) => {
       if (!file) return relative;
       return relative === '.' ? file : path.join(relative, file);
@@ -389,7 +445,9 @@ module.exports = {
   applyChanges,
   changedFiles,
   checksumFor,
+  DEFAULT_EXTENSIONS,
   listConfigFiles,
+  normalizeExtensions,
   main,
   normalizeIndentChar,
   normalizeVersion,
