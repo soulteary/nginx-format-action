@@ -138,6 +138,7 @@ jobs:
 | `indent` | `2` | 缩进宽度，范围为 1～16。 |
 | `indent-char` | `space` | 可选 `space`、`tab`、`\s` 或 `\t`。 |
 | `version` | `v2.3.0` | 指定 `nginx-formatter` 的精确发布版本，保证运行结果可复现。 |
+| `extensions` | `.conf` | 当 `path` 为目录时扫描的文件扩展名，以逗号分隔。开头的点号可省略，匹配不区分大小写。检查模式只能为它扫描到的文件背书，因此若配置使用了其他文件名（例如 `conf,nginx`），需要相应放宽。 |
 | `annotations` | `true` | 为存在差异的文件生成 GitHub 工作流标注。 |
 
 ## 输出参数

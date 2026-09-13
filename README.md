@@ -139,6 +139,7 @@ Use `continue-on-error` only when formatting differences are informational. GitH
 | `indent` | `2` | Indentation width from 1 to 16. |
 | `indent-char` | `space` | `space`, `tab`, `\s`, or `\t`. |
 | `version` | `v2.3.0` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
+| `extensions` | `.conf` | Comma-separated extensions to scan when `path` is a directory. A leading dot is optional and matching is case-insensitive. Check mode can only vouch for the files it scans, so widen this (for example `conf,nginx`) if your configuration uses other names. |
 | `annotations` | `true` | Add workflow annotations for changed files. |
 
 ## Outputs
