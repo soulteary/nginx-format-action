@@ -1,6 +1,6 @@
 {
   "name": "nginx-format-action",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "Check or format Nginx configuration files in GitHub Actions",
   "license": "Apache-2.0",
