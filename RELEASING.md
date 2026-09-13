@@ -4,20 +4,20 @@ Stable releases use semantic version tags such as `v1.0.0`. The release workflow
 
 [中文发布说明](RELEASING_CN.md)
 
-## Publish v1.0.0
+## Publish a release
 
-1. Confirm `package.json` contains `"version": "1.0.0"` and all release changes are on `main`.
+1. Confirm `package.json` contains the version you are about to tag (the workflow rejects a tag that does not match it) and all release changes are on `main`.
 2. Confirm the latest CI run on `main` is successful.
 3. Create and push an annotated tag:
 
    ```bash
    git switch main
    git pull --ff-only
-   git tag -a v1.0.0 -m "Nginx Format Action v1.0.0"
-   git push origin v1.0.0
+   git tag -a v1.0.1 -m "Nginx Format Action v1.0.1"
+   git push origin v1.0.1
    ```
 
-4. Wait for the **Release** workflow to finish. It creates the `v1.0.0` GitHub Release and updates `v1` and `v1.0`, so workflows can choose the appropriate reference:
+4. Wait for the **Release** workflow to finish. It creates the `v1.0.1` GitHub Release and updates `v1` and `v1.0`, so workflows can choose the appropriate reference:
 
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # latest compatible v1 release
