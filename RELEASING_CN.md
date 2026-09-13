@@ -4,25 +4,25 @@
 
 [English](RELEASING.md)
 
-## 发布 v1.0.0
+## 发布新版本
 
-1. 确认 `package.json` 中的版本为 `"version": "1.0.0"`，并且所有发布内容均已合入 `main`。
+1. 确认 `package.json` 中的版本与即将打的标签一致（工作流会拒绝与之不符的标签），并且所有发布内容均已合入 `main`。
 2. 确认 `main` 分支最新一次 CI 已通过。
 3. 创建并推送带说明的版本标签：
 
    ```bash
    git switch main
    git pull --ff-only
-   git tag -a v1.0.0 -m "Nginx Format Action v1.0.0"
-   git push origin v1.0.0
+   git tag -a v1.0.1 -m "Nginx Format Action v1.0.1"
+   git push origin v1.0.1
    ```
 
-4. 等待 **Release** 工作流完成。工作流会创建 `v1.0.0` GitHub Release 并更新 `v1` 和 `v1.0`，使用方可以选择以下引用方式：
+4. 等待 **Release** 工作流完成。工作流会创建 `v1.0.1` GitHub Release 并更新 `v1` 和 `v1.0`，使用方可以选择以下引用方式：
 
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # 跟随 v1 最新兼容版本
    - uses: soulteary/nginx-format-action@v1.0     # 跟随 v1.0 最新补丁版本
-   - uses: soulteary/nginx-format-action@v1.0.0   # 固定到准确的发布标签
+   - uses: soulteary/nginx-format-action@v1.0.1   # 固定到刚推送的准确标签
    ```
 
 5. 检查自动生成的 Release Notes，并在一个实际使用仓库中验证示例工作流。
