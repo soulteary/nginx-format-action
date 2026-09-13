@@ -22,7 +22,7 @@
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # 跟随 v1 最新兼容版本
    - uses: soulteary/nginx-format-action@v1.0     # 跟随 v1.0 最新补丁版本
-   - uses: soulteary/nginx-format-action@v1.0.0   # 固定到准确的发布标签
+   - uses: soulteary/nginx-format-action@v1.0.1   # 固定到刚推送的准确标签
    ```
 
 5. 检查自动生成的 Release Notes，并在一个实际使用仓库中验证示例工作流。

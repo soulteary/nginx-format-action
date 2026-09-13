@@ -22,7 +22,7 @@ Stable releases use semantic version tags such as `v1.0.0`. The release workflow
    ```yaml
    - uses: soulteary/nginx-format-action@v1       # latest compatible v1 release
    - uses: soulteary/nginx-format-action@v1.0     # latest compatible v1.0 patch
-   - uses: soulteary/nginx-format-action@v1.0.0   # exact release tag
+   - uses: soulteary/nginx-format-action@v1.0.1   # the exact tag just pushed
    ```
 
 5. Check the generated release notes and verify the example workflow in a consumer repository.
