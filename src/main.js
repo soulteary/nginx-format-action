@@ -251,23 +251,38 @@ function prepareFormattedCopy(target, binary, indent, indentChar, extensions = D
 
     if (stat.isDirectory()) {
       fs.mkdirSync(copied);
-      for (const relative of listConfigFiles(target, extensions)) {
+      const selected = listConfigFiles(target, extensions);
+      for (const relative of selected) {
         const source = path.join(target, relative);
         const destination = path.join(copied, relative);
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.copyFileSync(source, destination);
       }
-      runCommand(binary, [
-        'format',
-        '--input',
-        copied,
-        '--output',
-        copied,
-        '--indent',
-        String(indent),
-        '--char',
-        indentChar,
-      ]);
+      // Format each selected file individually rather than handing the whole
+      // directory to the formatter. `format --input <dir>` walks with a
+      // hard-coded suffix filter upstream --
+      //
+      //     if !strings.HasSuffix(rel, ".conf") { return nil }
+      //     (nginx-formatter internal/updater/updater.go, UpdateConfInDir)
+      //
+      // so a widened `extensions` set would copy a .nginx file in, leave it
+      // unformatted, compare it against an identical source and report
+      // `changed: false` -- while the scope log claimed it had been checked.
+      // That is worse than not scanning it at all. The single-file entry point
+      // is documented upstream as the one that "does not filter by the .conf
+      // suffix, so any file can be formatted", and applies the same
+      // transformation, so .conf results are unchanged.
+      for (const relative of selected) {
+        runCommand(binary, [
+          'format',
+          '--input',
+          path.join(copied, relative),
+          '--indent',
+          String(indent),
+          '--char',
+          indentChar,
+        ]);
+      }
     } else if (stat.isFile()) {
       fs.copyFileSync(target, copied);
       runCommand(binary, [

@@ -202,16 +202,20 @@ test('directory mode honours a widened extensions input', () => {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-widen-'));
   try {
     const fake = makeFakeFormatter(workspace);
-    fs.writeFileSync(path.join(workspace, 'site.nginx'), 'server {\n  listen 80;\n}\n');
+    // Deliberately UNFORMATTED: an already-formatted fixture cannot tell whether
+    // the formatter ran on it, which is the whole point of this test.
+    fs.writeFileSync(path.join(workspace, 'site.nginx'), 'server { listen 80; }');
 
     // Default: the .nginx file is not scanned, so the check trivially passes.
     const ignored = runAction(workspace, fake, { path: '.', mode: 'check' });
     assert.equal(ignored.status, 0, ignored.stderr || ignored.stdout);
     assert.match(ignored.outputs, /changed<<[^\n]+\nfalse\n/);
 
-    // Widened: the same file is now in scope and the check has an opinion.
+    // Widened: the file is in scope, is not formatted, and the check must say so.
     const scanned = runAction(workspace, fake, { path: '.', mode: 'check', extensions: 'conf,nginx' });
     assert.match(scanned.stdout, /matching: \.conf, \.nginx/);
+    assert.match(scanned.outputs, /changed<<[^\n]+\ntrue\n/);
+    assert.match(scanned.outputs, /changed-files<<[^\n]+\nsite\.nginx\n/);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
