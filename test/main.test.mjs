@@ -57,10 +57,13 @@ function runAction(workspace, fakeFormatter, inputs = {}) {
     INPUT_MODE: inputs.mode || 'check',
     INPUT_INDENT: inputs.indent || '2',
     'INPUT_INDENT-CHAR': inputs.indentChar || 'space',
-    INPUT_VERSION: inputs.version || 'v2.3.0',
     INPUT_ANNOTATIONS: inputs.annotations || 'false',
     INPUT_EXTENSIONS: inputs.extensions || '.conf',
   };
+  // An omitted input must exercise the action's fallback, even when the
+  // parent test process has an INPUT_VERSION in its environment.
+  delete environment.INPUT_VERSION;
+  if (inputs.version !== undefined) environment.INPUT_VERSION = inputs.version;
   const result = spawnSync(process.execPath, [path.join(repositoryRoot, 'dist/index.js')], {
     cwd: workspace,
     env: environment,
@@ -74,10 +77,35 @@ function runAction(workspace, fakeFormatter, inputs = {}) {
 }
 
 test('normalizes and validates formatter versions', () => {
-  assert.equal(action.normalizeVersion('2.3.0'), 'v2.3.0');
-  assert.equal(action.normalizeVersion('v2.3.0-rc.1'), 'v2.3.0-rc.1');
+  assert.equal(action.normalizeVersion('2.6.1'), 'v2.6.1');
+  assert.equal(action.normalizeVersion('v2.6.1-rc.1'), 'v2.6.1-rc.1');
+  assert.equal(action.normalizeVersion('v2.3.0'), 'v2.3.0');
   assert.throws(() => action.normalizeVersion('latest'), /semantic release version/);
 });
+
+for (const scenario of [
+  { name: 'uses v2.6.1 when the version input is omitted', inputs: {}, expected: 'v2.6.1' },
+  { name: 'respects an explicitly selected legacy formatter', inputs: { version: 'v2.3.0' }, expected: 'v2.3.0' },
+]) {
+  test(scenario.name, () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'nginx-format-version-'));
+    const inheritedVersion = process.env.INPUT_VERSION;
+    try {
+      const fake = makeFakeFormatter(workspace);
+      fs.writeFileSync(path.join(workspace, 'nginx.conf'), 'server {\n  listen 80;\n}\n');
+      process.env.INPUT_VERSION = 'v9.9.9';
+
+      const result = runAction(workspace, fake, { path: 'nginx.conf', ...scenario.inputs });
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const selectedVersion = result.outputs.match(/^formatter-version<<[^\n]+\n([^\n]+)\n/m)?.[1];
+      assert.equal(selectedVersion, scenario.expected);
+    } finally {
+      if (inheritedVersion === undefined) delete process.env.INPUT_VERSION;
+      else process.env.INPUT_VERSION = inheritedVersion;
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+}
 
 test('parses booleans strictly', () => {
   assert.equal(action.parseBoolean('yes', 'value'), true);
@@ -99,10 +127,12 @@ test('finds a release checksum by exact asset name', () => {
   assert.throws(() => action.checksumFor(`${digest}  other.tar.gz\n`, 'archive.tar.gz'));
 });
 
-test('pins every default-version runner checksum', () => {
-  for (const platform of ['darwin', 'linux']) {
-    for (const architecture of ['amd64', 'arm64']) {
-      assert.match(action.PINNED_CHECKSUMS[`v2.3.0/${platform}-${architecture}`], /^[a-f0-9]{64}$/);
+test('pins every default and legacy formatter runner checksum', () => {
+  for (const version of ['v2.6.1', 'v2.3.0']) {
+    for (const platform of ['darwin', 'linux']) {
+      for (const architecture of ['amd64', 'arm64']) {
+        assert.match(action.PINNED_CHECKSUMS[`${version}/${platform}-${architecture}`], /^[a-f0-9]{64}$/);
+      }
     }
   }
 });

@@ -115,8 +115,8 @@ jobs:
           FORMATTER_VERSION: ${{ steps.write.outputs.formatter-version }}
         run: |
           test "$CHANGED" = "true"
-          test "$FORMATTER_VERSION" = "v2.3.0"
-          test -s test/work/nginx.conf
+          test "$FORMATTER_VERSION" = "v2.6.1"
+          cmp test/fixtures/formatted/nginx.conf test/work/nginx.conf
 
       - name: Verify formatted result is stable
         uses: ./
