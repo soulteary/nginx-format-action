@@ -7,8 +7,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const FORMATTER_REPOSITORY = 'soulteary/nginx-formatter';
-const DEFAULT_VERSION = 'v2.3.0';
+const DEFAULT_VERSION = 'v2.6.1';
 const PINNED_CHECKSUMS = Object.freeze({
+  'v2.6.1/darwin-amd64': '1734e241dc46eaaaf164dacfcca412f6242867dfd39e96a87bf1ad30b77b8ba9',
+  'v2.6.1/darwin-arm64': '33aecad6a017ed99c5d006cc01ecb023c4caf62bb5ec0a1bc910c4b6ae305377',
+  'v2.6.1/linux-amd64': '31da58f4b873e5c4337673cb3262963f5bd0b5afd5bbd11e9a33c4c363273737',
+  'v2.6.1/linux-arm64': '8e82d034828368007fe55c8505e11626107015a548820c9b9b1da4e2e0e87339',
   'v2.3.0/darwin-amd64': 'c5e4fbedb61c36fbbb3e222afab12aac3e99b88fe146e9b1e815436519051b24',
   'v2.3.0/darwin-arm64': '33c77b08fe22ba5efa65e7bab411f4a9f1dd4402ee07f6e68501b27a99bdf554',
   'v2.3.0/linux-amd64': 'bb4cc47079432d4965e0b7106f6351a3a78b95122733665a66625576b216ece8',
@@ -60,7 +64,7 @@ function parseBoolean(value, name) {
 function normalizeVersion(value) {
   const normalized = value.startsWith('v') ? value : `v${value}`;
   if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(normalized)) {
-    throw new Error('version must be a semantic release version such as v2.3.0');
+    throw new Error('version must be a semantic release version such as v2.6.1');
   }
   return normalized;
 }

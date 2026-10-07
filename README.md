@@ -9,6 +9,14 @@ The action downloads an official formatter release, verifies its SHA-256 checksu
 
 [中文文档](README_CN.md)
 
+## What's new in v1.1.0
+
+- The default formatter moves from `v2.3.0` to `v2.6.1`. It no longer adds a blank line between the last `location` block and its parent's closing brace, or a space before the closing parenthesis of an `if` condition with a quoted operand.
+- The new `extensions` input selects which files to scan in a directory, with `.conf` as the default. Each selected file is formatted separately, so additional extensions such as `.nginx` are processed too.
+- The four supported runner archives for `v2.6.1` are checked against SHA-256 digests pinned in the source. The existing `v2.3.0` digests remain available for the same additional verification when that version is selected explicitly.
+
+This upgrade spans several formatter releases, so existing configurations may produce different formatting. Set `version: v2.3.0` to keep the previous formatter and reproduce its output. The release workflow publishes the `v1.1` and `v1.1.0` Action references below after validation.
+
 ## Quick start
 
 Create `.github/workflows/nginx-format.yml`. This complete pull-request workflow checks every `.conf` file in the repository and fails with file annotations when formatting is required:
@@ -35,27 +43,28 @@ jobs:
           mode: check
 ```
 
-`@v1` follows the latest compatible v1 release. Use `@v1.0.0` to pin this Action to the first stable release. The `version` input below selects the `nginx-formatter` binary and is independent of the Action version.
+`@v1` follows the latest compatible v1 release. Use `@v1.1.0` to pin this Action to that release. The `version` input below selects the `nginx-formatter` binary and is independent of the Action version.
 
 | Action reference | Behavior | Recommended use |
 | --- | --- | --- |
 | `@v1` | Moves to the latest compatible v1 release | Most workflows |
-| `@v1.0` | Moves to the latest compatible v1.0 patch | Controlled patch updates |
-| `@v1.0.0` | Exact stable release tag | Exact release selection |
+| `@v1.1` | Moves to the latest compatible v1.1 patch | Controlled patch updates |
+| `@v1.1.0` | Exact stable release tag | Exact release selection |
 | `@<commit-sha>` | Immutable source revision | Strict supply-chain pinning |
 
 ## Examples
 
 ### Check one Nginx directory
 
-Use a directory path to recursively check its regular `.conf` files:
+Use a directory path to recursively check regular files matching `extensions` (`.conf` by default). This example also includes `.nginx` files:
 
 ```yaml
 - uses: soulteary/nginx-format-action@v1
   with:
     path: deploy/nginx
     mode: check
-    version: v2.3.0
+    version: v2.6.1
+    extensions: conf,nginx
 ```
 
 ### Format one file
@@ -134,12 +143,12 @@ Use `continue-on-error` only when formatting differences are informational. GitH
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `path` | `.` | A file or directory inside `GITHUB_WORKSPACE`. Directories are scanned recursively for regular `.conf` files; symlinks are skipped. A single file can use any extension. |
+| `path` | `.` | A file or directory inside `GITHUB_WORKSPACE`. Directories are scanned recursively for regular files matching `extensions` (default `.conf`); symlinks are skipped. A single file can use any extension. |
 | `mode` | `check` | `check` reports differences and fails; `write` applies formatting in place. |
 | `indent` | `2` | Indentation width from 1 to 16. |
 | `indent-char` | `space` | `space`, `tab`, `\s`, or `\t`. |
-| `version` | `v2.3.0` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
-| `extensions` | `.conf` | Comma-separated extensions to scan when `path` is a directory. A leading dot is optional and matching is case-insensitive. Check mode can only vouch for the files it scans, so widen this (for example `conf,nginx`) if your configuration uses other names. |
+| `version` | `v2.6.1` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
+| `extensions` | `.conf` | Comma-separated extensions to scan when `path` is a directory. A leading dot is optional and matching is case-insensitive. Each selected file is formatted separately. Check mode can only vouch for the files it scans, so widen this (for example `conf,nginx`) if your configuration uses other names. |
 | `annotations` | `true` | Add workflow annotations for changed files. |
 
 ## Outputs
@@ -154,10 +163,10 @@ Use `continue-on-error` only when formatting differences are informational. GitH
 
 - Supports Linux and macOS runners on x64 and arm64, matching upstream release assets. Windows is not supported because `nginx-formatter` does not currently publish Windows binaries.
 - Rejects targets outside `GITHUB_WORKSPACE`.
-- Verifies the release archive against the upstream checksum file before execution. The default v2.3.0 assets are also checked against digests pinned in this action's source.
+- Verifies the release archive against the upstream checksum file before execution. The default `v2.6.1` assets are also checked against digests pinned in this action's source; the `v2.3.0` pins are retained for workflows that explicitly select the previous version.
 - Uses `RUNNER_TOOL_CACHE` to avoid downloading the same verified formatter version repeatedly in a job.
 - Formats a temporary copy first. Parse or download failures do not partially modify the workspace.
-- Copies only regular `.conf` files for directory targets, avoiding unrelated checkout data and symlink escapes.
+- Copies only regular files matching the configured `extensions` (default `.conf`) for directory targets, avoiding unrelated checkout data and symlink escapes.
 - Preserves existing file permissions in `write` mode.
 - Does not commit or push changes and does not require write permissions.
 
@@ -178,7 +187,7 @@ The CI workflow also runs the action itself against formatted and unformatted fi
 
 ## Releasing
 
-Stable releases use full-version tags such as `v1.0.0` and moving compatibility aliases such as `v1` and `v1.0`. See [RELEASING.md](RELEASING.md) for the validated release workflow, exact publishing commands, and the owner-confirmed first Marketplace publication step.
+Stable releases use full-version tags such as `v1.1.0` and moving compatibility aliases such as `v1` and `v1.1`. See [RELEASING.md](RELEASING.md) for the validated release workflow, exact publishing commands, and the owner-confirmed first Marketplace publication step.
 
 ## License
 

@@ -45,9 +45,11 @@ jobs:
       - name: Verify write-mode result
         env:
           CHANGED: ${{ steps.write.outputs.changed }}
+          FORMATTER_VERSION: ${{ steps.write.outputs.formatter-version }}
         run: |
           test "$CHANGED" = "true"
-          test -s test/work/nginx.conf
+          test "$FORMATTER_VERSION" = "v2.6.1"
+          cmp test/fixtures/formatted/nginx.conf test/work/nginx.conf
 
       - name: Check write-mode result is stable
         id: stable
