@@ -9,6 +9,8 @@ The action downloads an official formatter release, verifies its SHA-256 checksu
 
 [中文文档](README_CN.md)
 
+The development branch now defaults to formatter `v2.6.3` and uses Bun `1.4.5` for validation. Source-pinned checksums for `v2.6.1` and `v2.3.0` remain supported.
+
 ## What's new in v1.1.0
 
 - The default formatter moves from `v2.3.0` to `v2.6.1`. It no longer adds a blank line between the last `location` block and its parent's closing brace, or a space before the closing parenthesis of an `if` condition with a quoted operand.
@@ -63,7 +65,7 @@ Use a directory path to recursively check regular files matching `extensions` (`
   with:
     path: deploy/nginx
     mode: check
-    version: v2.6.1
+    version: v2.6.3
     extensions: conf,nginx
 ```
 
@@ -147,7 +149,7 @@ Use `continue-on-error` only when formatting differences are informational. GitH
 | `mode` | `check` | `check` reports differences and fails; `write` applies formatting in place. |
 | `indent` | `2` | Indentation width from 1 to 16. |
 | `indent-char` | `space` | `space`, `tab`, `\s`, or `\t`. |
-| `version` | `v2.6.1` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
+| `version` | `v2.6.3` | Exact `nginx-formatter` release version. Pinning makes runs reproducible. |
 | `extensions` | `.conf` | Comma-separated extensions to scan when `path` is a directory. A leading dot is optional and matching is case-insensitive. Each selected file is formatted separately. Check mode can only vouch for the files it scans, so widen this (for example `conf,nginx`) if your configuration uses other names. |
 | `annotations` | `true` | Add workflow annotations for changed files. |
 
@@ -163,7 +165,7 @@ Use `continue-on-error` only when formatting differences are informational. GitH
 
 - Supports Linux and macOS runners on x64 and arm64, matching upstream release assets. Windows is not supported because `nginx-formatter` does not currently publish Windows binaries.
 - Rejects targets outside `GITHUB_WORKSPACE`.
-- Verifies the release archive against the upstream checksum file before execution. The default `v2.6.1` assets are also checked against digests pinned in this action's source; the `v2.3.0` pins are retained for workflows that explicitly select the previous version.
+- Verifies the release archive against the upstream checksum file before execution. The default `v2.6.3` assets are also checked against digests pinned in this action's source; the `v2.3.0` pins are retained for workflows that explicitly select the previous version.
 - Uses `RUNNER_TOOL_CACHE` to avoid downloading the same verified formatter version repeatedly in a job.
 - Formats a temporary copy first. Parse or download failures do not partially modify the workspace.
 - Copies only regular files matching the configured `extensions` (default `.conf`) for directory targets, avoiding unrelated checkout data and symlink escapes.

@@ -7,8 +7,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const FORMATTER_REPOSITORY = 'soulteary/nginx-formatter';
-const DEFAULT_VERSION = 'v2.6.1';
+const DEFAULT_VERSION = 'v2.6.3';
 const PINNED_CHECKSUMS = Object.freeze({
+  'v2.6.3/darwin-amd64': '3538e8d1d9d0803ca7d5d306555a0dafac0f9562fb4670ea5bb5fc2ccaf22a1e',
+  'v2.6.3/darwin-arm64': '9c4817c57e0c51a30f236201acf448428ecf220eb23f6b0a854c9a95b46104c9',
+  'v2.6.3/linux-amd64': 'dead22abe88c36c41f95937d1ae4f4c270de77473d3eb7dc15f9796844a38b27',
+  'v2.6.3/linux-arm64': 'fe6b7b4e24dda843163586420db135ebfe5d37f57b5df9c56a5dc40748dbff3d',
   'v2.6.1/darwin-amd64': '1734e241dc46eaaaf164dacfcca412f6242867dfd39e96a87bf1ad30b77b8ba9',
   'v2.6.1/darwin-arm64': '33aecad6a017ed99c5d006cc01ecb023c4caf62bb5ec0a1bc910c4b6ae305377',
   'v2.6.1/linux-amd64': '31da58f4b873e5c4337673cb3262963f5bd0b5afd5bbd11e9a33c4c363273737',
