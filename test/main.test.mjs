@@ -84,7 +84,7 @@ test('normalizes and validates formatter versions', () => {
 });
 
 for (const scenario of [
-  { name: 'uses v2.6.1 when the version input is omitted', inputs: {}, expected: 'v2.6.1' },
+  { name: 'uses v2.6.3 when the version input is omitted', inputs: {}, expected: 'v2.6.3' },
   { name: 'respects an explicitly selected legacy formatter', inputs: { version: 'v2.3.0' }, expected: 'v2.3.0' },
 ]) {
   test(scenario.name, () => {
@@ -128,7 +128,7 @@ test('finds a release checksum by exact asset name', () => {
 });
 
 test('pins every default and legacy formatter runner checksum', () => {
-  for (const version of ['v2.6.1', 'v2.3.0']) {
+  for (const version of ['v2.6.3', 'v2.6.1', 'v2.3.0']) {
     for (const platform of ['darwin', 'linux']) {
       for (const architecture of ['amd64', 'arm64']) {
         assert.match(action.PINNED_CHECKSUMS[`${version}/${platform}-${architecture}`], /^[a-f0-9]{64}$/);
