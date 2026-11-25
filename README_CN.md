@@ -1,5 +1,7 @@
 # Nginx Format Action
 
+> v1.1.1: the default formatter is v2.6.3; explicit version inputs are unchanged.
+
 [![CI](https://github.com/soulteary/nginx-format-action/actions/workflows/ci.yml/badge.svg)](https://github.com/soulteary/nginx-format-action/actions/workflows/ci.yml)
 
 基于 [soulteary/nginx-formatter](https://github.com/soulteary/nginx-formatter)，在 GitHub Actions 中检查或格式化 Nginx 配置文件。
